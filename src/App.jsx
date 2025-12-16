@@ -9,8 +9,8 @@ const BUSINESS_INFO = {
   // API URL for creating checkout sessions
   checkoutUrl: "https://www.flamboroughpizza.co.uk/_functions/checkout",
   menuUrl: "https://www.flamboroughpizza.co.uk/_functions/menu",
-  // Bridge Page URL (Created in Wix to handle the payment popup)
-  paymentBridgeUrl: "https://www.flamboroughpizza.co.uk/app-payment",
+  // The Bridge Page on your Wix site that handles the payment popup
+  paymentBridgeUrl: "https://www.flamboroughpizza.co.uk/app-payment", 
   phone: "07990 140214",
   email: "flamboroughpizza@gmail.com",
   facebook: "https://www.facebook.com/profile.php?id=61583819023188",
@@ -299,9 +299,9 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder }) => {
         if (data.success) onCompleteOrder();
         else throw new Error('Server did not confirm cash order');
       } else {
-        // --- BRIDGE REDIRECT ---
-        // If we get a paymentId, redirect to the hidden Wix page to open the popup
+        // --- NEW PAYMENT REDIRECT ---
         if (data.paymentId) {
+          // Redirect to the Wix Bridge Page with the Payment ID
           window.location.href = `${BUSINESS_INFO.paymentBridgeUrl}?paymentId=${data.paymentId}`;
         } else {
           throw new Error('No payment ID returned. Wix Payments may not be active.');
@@ -310,7 +310,7 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder }) => {
     } catch (err) {
       console.error("Order Error:", err);
       if (err.message.includes('500')) {
-          setErrorMsg("Server Error (500): Check if 'AppOrders' collection exists.");
+          setErrorMsg("Server Error (500): Check if Wix Payments is connected and 'AppOrders' collection exists.");
       } else if (err.message.includes('Failed to fetch')) {
           setErrorMsg("Connection Error: Backend code may not be published or CORS is blocking.");
       } else {
@@ -386,7 +386,7 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder }) => {
                   <CreditCard size={20} /><div className="text-left flex-1"><p className="font-bold text-sm">Online Card</p></div>{paymentMethod === 'card' && <CheckCircle size={18} />}
               </button>
               <button type="button" onClick={() => setPaymentMethod('cash')} className={`flex items-center gap-3 p-3 rounded-lg border w-full ${paymentMethod === 'cash' ? 'border-gray-500 bg-gray-50 text-gray-900' : 'border-gray-200'}`}>
-                  <Banknote size={20} /><div className="text-left flex-1"><p className="font-bold text-sm">Cash at Shop</p></div>{paymentMethod === 'cash' && <CheckCircle size={18} />}
+                  <Banknote size={20} /><div className="text-left flex-1"><p className="font-bold text-sm">Pay Cash or Card at Shop</p></div>{paymentMethod === 'cash' && <CheckCircle size={18} />}
               </button>
             </div>
           )}
