@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Phone, MapPin, Clock, ShoppingBag, Mail, Facebook, ArrowUp, Plus, Minus, X, Trash2, ArrowLeft, ChevronRight, Bike, Store, Search, CheckCircle, AlertCircle, CreditCard, User, Home, Lock, Banknote, Calendar, AlertTriangle } from 'lucide-react';
 
 // --- Configuration & Data ---
@@ -14,7 +14,11 @@ const BUSINESS_INFO = {
   facebook: "https://www.facebook.com/profile.php?id=61583819023188",
   address: "Living Sea Centre, South Sea Road, Flamborough YO15 1AE",
   hours: "Thursday - Saturday: 5pm - 9pm",
-  logo: "https://placehold.co/150x150/png?text=Logo", 
+  logo: "https://placehold.co/150x150/png?text=Logo",
+  // Optimized Video Link (Coverr CDN - Faster loading)
+  splashVideo: "https://cdn.coverr.co/videos/coverr-pizza-in-the-oven-5784/1080p.mp4",
+  // Fallback image in case video doesn't load
+  splashPoster: "https://images.pexels.com/photos/5644754/pexels-photo-5644754.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
 };
 
 // This is the "Safety Menu" (Default)
@@ -109,6 +113,62 @@ const getTimeSlots = () => {
 };
 
 // --- Components ---
+
+const WelcomeScreen = ({ onFinish }) => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    // Force play on mount to handle strict browser autoplay policies
+    if (videoRef.current) {
+      videoRef.current.play().catch(error => {
+        console.log("Autoplay prevented:", error);
+        // If autoplay fails, the poster image will still show
+      });
+    }
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black text-white flex flex-col items-center justify-center overflow-hidden">
+      {/* Background Video */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-black/60 z-10" /> {/* Overlay */}
+        <video 
+          ref={videoRef}
+          autoPlay 
+          muted 
+          loop 
+          playsInline
+          poster={BUSINESS_INFO.splashPoster}
+          className="w-full h-full object-cover"
+        >
+          <source src={BUSINESS_INFO.splashVideo} type="video/mp4" />
+        </video>
+      </div>
+
+      <div className="relative z-20 text-center px-6 animate-fade-in-up">
+        <h1 className="text-5xl md:text-7xl font-bold mb-4 font-serif tracking-tight">
+          {BUSINESS_INFO.name}
+        </h1>
+        <p className="text-xl md:text-2xl text-gray-200 mb-12 font-light tracking-wide">
+          {BUSINESS_INFO.tagline}
+        </p>
+        
+        <button 
+          onClick={onFinish}
+          style={{ backgroundColor: '#3F3D3B' }}
+          className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 rounded-full hover:opacity-90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600 focus:ring-offset-black"
+        >
+          <span>View Menu</span>
+          <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+        </button>
+      </div>
+      
+      <div className="absolute bottom-8 z-20 text-gray-400 text-sm animate-pulse">
+        Open {BUSINESS_INFO.hours}
+      </div>
+    </div>
+  );
+};
 
 const MenuItem = ({ item, onAdd, isShopOpen }) => {
   const isOutOfStock = !item.inStock && item.inStock !== undefined;
@@ -464,6 +524,7 @@ const Navbar = ({ activeCategory, onNavigate, categories, cartCount, openCart })
 };
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [activeCategory, setActiveCategory] = useState(DEFAULT_CATEGORIES[0].id);
   const [cart, setCart] = useState([]);
@@ -541,6 +602,7 @@ export default function App() {
   const handleCompleteOrder = () => { setCurrentView('success'); setCart([]); };
   const handleBackHome = () => { setCurrentView('menu'); };
 
+  if (showSplash) return <WelcomeScreen onFinish={() => setShowSplash(false)} />;
   if (currentView === 'cart') return <CartView cart={cart} onBack={() => setCurrentView('menu')} onUpdateQuantity={updateQuantity} onCheckout={handleProceedToCheckout} isShopOpen={storeStatus.open} />;
   if (currentView === 'checkout') return <CheckoutView cart={cart} total={checkoutTotal} orderType={checkoutOrderType} onBack={() => setCurrentView('cart')} onCompleteOrder={handleCompleteOrder} />;
   if (currentView === 'success') return <SuccessView onBackHome={handleBackHome} />;
