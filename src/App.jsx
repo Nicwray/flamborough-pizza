@@ -271,18 +271,11 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder }) => {
     const dateObj = new Date(selectedDate);
     const formattedDate = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
     
-    // Combine First and Last name for backend compatibility
     const fullName = `${formData.firstName} ${formData.lastName}`.trim();
     
     const fullOrderData = {
-        cart: cart, 
-        total: total, 
-        orderType: orderType, 
-        paymentMethod: paymentMethod, 
-        customer: {
-            ...formData,
-            name: fullName // Backend expects 'name'
-        },
+        cart: cart, total: total, orderType: orderType, paymentMethod: paymentMethod, 
+        customer: { ...formData, name: fullName },
         deliverySlot: { date: formattedDate, time: selectedTime, rawDate: selectedDate }
     };
 
@@ -297,7 +290,6 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder }) => {
       const data = await response.json();
 
       if (!response.ok) {
-          // If server returns error, we throw it to catch block
           throw new Error(data.error || data.details || `Server Error ${response.status}`);
       }
 
@@ -310,9 +302,8 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder }) => {
       }
     } catch (err) {
       console.error("Order Error:", err);
-      // Improved error messaging
       if (err.message.includes('500')) {
-          setErrorMsg("Server Error (500): Check if Wix Payments is connected and 'Import1' collection exists.");
+          setErrorMsg("Server Error (500): Check if Wix Payments is connected and 'AppOrders' collection exists.");
       } else if (err.message.includes('Failed to fetch')) {
           setErrorMsg("Connection Error: Backend code may not be published or CORS is blocking.");
       } else {
@@ -362,7 +353,6 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder }) => {
           {/* Contact */}
           <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-4">
             <div className="flex items-center gap-2 text-gray-900 font-bold"><User size={18} /><h3>Details</h3></div>
-            {/* Split Name Fields */}
             <div className="flex gap-4">
                 <input required name="firstName" placeholder="First Name" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" onChange={handleInputChange} />
                 <input required name="lastName" placeholder="Last Name" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" onChange={handleInputChange} />
