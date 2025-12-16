@@ -527,9 +527,6 @@ const Navbar = ({ activeCategory, onNavigate, categories, cartCount, openCart })
           </div>
           
           <div className="flex items-center gap-2 mt-6">
-            <a href={`tel:${BUSINESS_INFO.phone.replace(/\s/g, '')}`} className="hidden sm:flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors" aria-label="Call us">
-              <Phone size={18} />
-            </a>
             <button onClick={openCart} className="relative flex items-center gap-2 text-white text-sm font-bold px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity shadow-sm" style={{ backgroundColor: '#3F3D3B' }}><span>Order</span><ShoppingBag size={16} />{cartCount > 0 && <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">{cartCount}</span>}</button>
           </div>
         </div>
