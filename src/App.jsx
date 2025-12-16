@@ -9,6 +9,8 @@ const BUSINESS_INFO = {
   // API URL for creating checkout sessions
   checkoutUrl: "https://www.flamboroughpizza.co.uk/_functions/checkout",
   menuUrl: "https://www.flamboroughpizza.co.uk/_functions/menu",
+  // Bridge Page URL (Created in Wix to handle the payment popup)
+  paymentBridgeUrl: "https://www.flamboroughpizza.co.uk/app-payment",
   phone: "07990 140214",
   email: "flamboroughpizza@gmail.com",
   facebook: "https://www.facebook.com/profile.php?id=61583819023188",
@@ -297,13 +299,18 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder }) => {
         if (data.success) onCompleteOrder();
         else throw new Error('Server did not confirm cash order');
       } else {
-        if (data.paymentUrl) window.location.href = data.paymentUrl;
-        else throw new Error('No payment URL returned. Wix Payments may not be active.');
+        // --- BRIDGE REDIRECT ---
+        // If we get a paymentId, redirect to the hidden Wix page to open the popup
+        if (data.paymentId) {
+          window.location.href = `${BUSINESS_INFO.paymentBridgeUrl}?paymentId=${data.paymentId}`;
+        } else {
+          throw new Error('No payment ID returned. Wix Payments may not be active.');
+        }
       }
     } catch (err) {
       console.error("Order Error:", err);
       if (err.message.includes('500')) {
-          setErrorMsg("Server Error (500): Check if Wix Payments is connected and 'AppOrders' collection exists.");
+          setErrorMsg("Server Error (500): Check if 'AppOrders' collection exists.");
       } else if (err.message.includes('Failed to fetch')) {
           setErrorMsg("Connection Error: Backend code may not be published or CORS is blocking.");
       } else {
