@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Phone, MapPin, Clock, ShoppingBag, Mail, Facebook, ArrowUp, Plus, Minus, X, Trash2, ArrowLeft, ChevronRight, Bike, Store, Search, CheckCircle, AlertCircle, CreditCard, User, Home, Lock, Banknote, Calendar, AlertTriangle } from 'lucide-react';
+import { Phone, MapPin, Clock, ShoppingBag, Mail, Facebook, ArrowUp, Plus, Minus, X, Trash2, ArrowLeft, ChevronRight, Bike, Store, Search, CheckCircle, AlertCircle, CreditCard, User, Home, Lock, Banknote, Calendar, AlertTriangle, Volume2, VolumeX } from 'lucide-react';
 
 // --- Configuration & Data ---
 
 const BUSINESS_INFO = {
   name: "Flamborough Pizza",
-  tagline: "Authentic Wood-Fired Taste",
+  tagline: "Authentic Sourdough Taste",
   // API URL for creating checkout sessions
   checkoutUrl: "https://www.flamboroughpizza.co.uk/_functions/checkout",
   menuUrl: "https://www.flamboroughpizza.co.uk/_functions/menu",
@@ -14,10 +14,10 @@ const BUSINESS_INFO = {
   facebook: "https://www.facebook.com/profile.php?id=61583819023188",
   address: "Living Sea Centre, South Sea Road, Flamborough YO15 1AE",
   hours: "Thursday - Saturday: 5pm - 9pm",
-  logo: "https://placehold.co/150x150/png?text=Logo",
-  // Optimized Video Link (Coverr CDN - Faster loading)
-  splashVideo: "https://cdn.coverr.co/videos/coverr-pizza-in-the-oven-5784/1080p.mp4",
-  // Fallback image in case video doesn't load
+  logo: "https://static.wixstatic.com/media/6107d8_9990534191124566887d6e0e61aa1ad0~mv2.png",
+  // Correct Wix Video Link
+  splashVideo: "https://video.wixstatic.com/video/6107d8_5c4070e48a074075885dc84f2e0611fe/720p/mp4/file.mp4",
+  // Fallback image
   splashPoster: "https://images.pexels.com/photos/5644754/pexels-photo-5644754.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
 };
 
@@ -116,22 +116,31 @@ const getTimeSlots = () => {
 
 const WelcomeScreen = ({ onFinish }) => {
   const videoRef = useRef(null);
+  const [isMuted, setIsMuted] = useState(true);
 
   useEffect(() => {
     // Force play on mount to handle strict browser autoplay policies
     if (videoRef.current) {
+      videoRef.current.muted = true; // Start muted to allow autoplay
       videoRef.current.play().catch(error => {
         console.log("Autoplay prevented:", error);
-        // If autoplay fails, the poster image will still show
       });
     }
   }, []);
+
+  const toggleMute = (e) => {
+    e.stopPropagation(); // Prevent clicking through to other elements
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(videoRef.current.muted);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black text-white flex flex-col items-center justify-center overflow-hidden">
       {/* Background Video */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-black/60 z-10" /> {/* Overlay */}
+        <div className="absolute inset-0 bg-black/40 z-10" /> {/* Overlay darkened slightly for better text visibility */}
         <video 
           ref={videoRef}
           autoPlay 
@@ -145,25 +154,34 @@ const WelcomeScreen = ({ onFinish }) => {
         </video>
       </div>
 
+      {/* Sound Toggle Button */}
+      <button 
+        onClick={toggleMute}
+        className="absolute top-4 right-4 z-30 p-2 bg-black/50 backdrop-blur-sm rounded-full text-white hover:bg-black/70 transition-colors"
+        aria-label={isMuted ? "Unmute video" : "Mute video"}
+      >
+        {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+      </button>
+
       <div className="relative z-20 text-center px-6 animate-fade-in-up">
-        <h1 className="text-5xl md:text-7xl font-bold mb-4 font-serif tracking-tight">
+        <h1 className="text-5xl md:text-7xl font-bold mb-4 font-serif tracking-tight drop-shadow-lg">
           {BUSINESS_INFO.name}
         </h1>
-        <p className="text-xl md:text-2xl text-gray-200 mb-12 font-light tracking-wide">
+        <p className="text-xl md:text-2xl text-white mb-12 font-light tracking-wide drop-shadow-md">
           {BUSINESS_INFO.tagline}
         </p>
         
         <button 
           onClick={onFinish}
           style={{ backgroundColor: '#3F3D3B' }}
-          className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 rounded-full hover:opacity-90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600 focus:ring-offset-black"
+          className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 rounded-full hover:opacity-90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600 focus:ring-offset-black shadow-xl"
         >
           <span>View Menu</span>
           <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
         </button>
       </div>
       
-      <div className="absolute bottom-8 z-20 text-gray-400 text-sm animate-pulse">
+      <div className="absolute bottom-8 z-20 text-gray-200 text-sm animate-pulse font-medium drop-shadow-md">
         Open {BUSINESS_INFO.hours}
       </div>
     </div>
