@@ -520,13 +520,15 @@ const Navbar = ({ activeCategory, onNavigate, categories, cartCount, openCart })
   return (
     <nav className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${isScrolled ? 'bg-white shadow-md' : 'bg-white/95 backdrop-blur-sm border-b border-gray-100'}`}>
       <div className="max-w-3xl mx-auto px-4 py-3">
-        <div className="flex items-center justify-between mb-3">
+        {/* Changed items-center to items-start to allow independent vertical positioning */}
+        <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <img src={BUSINESS_INFO.logo} alt={BUSINESS_INFO.name} className="w-12 h-12 rounded-full object-cover shadow-sm" onError={(e) => {e.target.style.display = 'none'}} />
-            <h1 className="font-serif font-bold text-3xl text-gray-900 leading-tight">{BUSINESS_INFO.name}</h1>
+            <h1 className="font-serif font-bold text-3xl text-gray-900 leading-tight py-1">{BUSINESS_INFO.name}</h1>
           </div>
           
-          <div className="flex items-center gap-2">
+          {/* Added mt-5 (approx 20px/5mm) to move the button down */}
+          <div className="flex items-center gap-2 mt-5">
             <a href={`tel:${BUSINESS_INFO.phone.replace(/\s/g, '')}`} className="hidden sm:flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors" aria-label="Call us">
               <Phone size={18} />
             </a>
