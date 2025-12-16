@@ -14,7 +14,7 @@ const BUSINESS_INFO = {
   facebook: "https://www.facebook.com/profile.php?id=61583819023188",
   address: "Living Sea Centre, South Sea Road, Flamborough YO15 1AE",
   hours: "Thursday - Saturday: 5pm - 9pm",
-  logo: "https://placehold.co/150x150/png?text=Logo", 
+  logo: "https://static.wixstatic.com/media/6107d8_9990534191124566887d6e0e61aa1ad0~mv2.png", 
 };
 
 // This is the "Safety Menu" (Default)
