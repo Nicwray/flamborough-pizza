@@ -521,12 +521,12 @@ const Navbar = ({ activeCategory, onNavigate, categories, cartCount, openCart })
     <nav className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${isScrolled ? 'bg-white shadow-md' : 'bg-white/95 backdrop-blur-sm border-b border-gray-100'}`}>
       <div className="max-w-3xl mx-auto px-4 py-3">
         <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 max-w-[65%]">
             <img src={BUSINESS_INFO.logo} alt={BUSINESS_INFO.name} className="w-12 h-12 rounded-full object-cover shadow-sm" onError={(e) => {e.target.style.display = 'none'}} />
             <h1 className="font-serif font-bold text-3xl text-gray-900 leading-tight py-1">{BUSINESS_INFO.name}</h1>
           </div>
           
-          <div className="flex items-center gap-2 mt-6">
+          <div className="flex items-center gap-2 mt-10">
             <button onClick={openCart} className="relative flex items-center gap-2 text-white text-sm font-bold px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity shadow-sm" style={{ backgroundColor: '#3F3D3B' }}><span>Order</span><ShoppingBag size={16} />{cartCount > 0 && <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">{cartCount}</span>}</button>
           </div>
         </div>
