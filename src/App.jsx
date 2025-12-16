@@ -526,7 +526,8 @@ const Navbar = ({ activeCategory, onNavigate, categories, cartCount, openCart })
             <h1 className="font-serif font-bold text-3xl text-gray-900 leading-tight py-1">{BUSINESS_INFO.name}</h1>
           </div>
           
-          <div className="flex items-center gap-2 mt-10">
+          {/* Changed mt-10 to mt-12 to move it down another ~2mm */}
+          <div className="flex items-center gap-2 mt-12">
             <button onClick={openCart} className="relative flex items-center gap-2 text-white text-sm font-bold px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity shadow-sm" style={{ backgroundColor: '#3F3D3B' }}><span>Order</span><ShoppingBag size={16} />{cartCount > 0 && <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">{cartCount}</span>}</button>
           </div>
         </div>
