@@ -283,19 +283,25 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder }) => {
         mode: 'cors',
         body: JSON.stringify(fullOrderData)
       });
-      if (!response.ok) throw new Error(`Server returned ${response.status}`);
+      
       const data = await response.json();
+
+      if (!response.ok) {
+          // Now we throw the ACTUAL error message from the backend!
+          throw new Error(data.error || data.details || `Server Error ${response.status}`);
+      }
 
       if (paymentMethod === 'cash') {
         if (data.success) onCompleteOrder();
         else throw new Error('Server did not confirm cash order');
       } else {
         if (data.paymentUrl) window.location.href = data.paymentUrl;
-        else throw new Error('No payment URL returned');
+        else throw new Error('No payment URL returned. Wix Payments may not be active.');
       }
     } catch (err) {
       console.error("Order Error:", err);
-      setErrorMsg("Unable to connect to your website. Please check the chat troubleshooting.");
+      // Display the REAL error to help debugging
+      setErrorMsg(`Payment Failed: ${err.message}`);
       setIsProcessing(false);
     }
   };
@@ -526,7 +532,6 @@ const Navbar = ({ activeCategory, onNavigate, categories, cartCount, openCart })
             <h1 className="font-serif font-bold text-3xl text-gray-900 leading-tight py-1">{BUSINESS_INFO.name}</h1>
           </div>
           
-          {/* Changed mt-10 to mt-12 to move it down another ~2mm */}
           <div className="flex items-center gap-2 mt-12">
             <button onClick={openCart} className="relative flex items-center gap-2 text-white text-sm font-bold px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity shadow-sm" style={{ backgroundColor: '#3F3D3B' }}><span>Order</span><ShoppingBag size={16} />{cartCount > 0 && <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">{cartCount}</span>}</button>
           </div>
