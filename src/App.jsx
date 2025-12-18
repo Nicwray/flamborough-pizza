@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Phone, MapPin, Clock, ShoppingBag, Mail, Facebook, ArrowUp, Plus, Minus, X, Trash2, ArrowLeft, ChevronRight, Bike, Store, Search, CheckCircle, AlertCircle, CreditCard, User, Home, Lock, Banknote, Calendar, AlertTriangle, Volume2, VolumeX } from 'lucide-react';
+import { Phone, MapPin, Clock, ShoppingBag, Mail, Facebook, ArrowUp, Plus, Minus, X, Trash2, ArrowLeft, ChevronRight, Bike, Store, Search, CheckCircle, AlertCircle, CreditCard, User, Home, Lock, Banknote, Calendar, AlertTriangle, Volume2, VolumeX, Edit2 } from 'lucide-react';
 
 // --- Configuration & Data ---
 
@@ -9,8 +9,8 @@ const BUSINESS_INFO = {
   // API URL for creating checkout sessions
   checkoutUrl: "https://www.flamboroughpizza.co.uk/_functions/checkout",
   menuUrl: "https://www.flamboroughpizza.co.uk/_functions/menu",
-  // The Bridge Page on your Wix site that handles the payment popup
-  paymentBridgeUrl: "https://www.flamboroughpizza.co.uk/app-payment", 
+  // Bridge Page URL (Created in Wix to handle the payment popup)
+  paymentBridgeUrl: "https://www.flamboroughpizza.co.uk/app-payment",
   phone: "07990 140214",
   email: "flamboroughpizza@gmail.com",
   facebook: "https://www.facebook.com/profile.php?id=61583819023188",
@@ -121,9 +121,8 @@ const WelcomeScreen = ({ onFinish }) => {
   const [isMuted, setIsMuted] = useState(true);
 
   useEffect(() => {
-    // Force play on mount to handle strict browser autoplay policies
     if (videoRef.current) {
-      videoRef.current.muted = true; // Start muted to allow autoplay
+      videoRef.current.muted = true;
       videoRef.current.play().catch(error => {
         console.log("Autoplay prevented:", error);
       });
@@ -131,7 +130,7 @@ const WelcomeScreen = ({ onFinish }) => {
   }, []);
 
   const toggleMute = (e) => {
-    e.stopPropagation(); // Prevent clicking through to other elements
+    e.stopPropagation();
     if (videoRef.current) {
       videoRef.current.muted = !videoRef.current.muted;
       setIsMuted(videoRef.current.muted);
@@ -142,7 +141,7 @@ const WelcomeScreen = ({ onFinish }) => {
     <div className="fixed inset-0 z-50 bg-black text-white flex flex-col items-center justify-center overflow-hidden">
       {/* Background Video */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-black/40 z-10" /> {/* Overlay darkened slightly for better text visibility */}
+        <div className="absolute inset-0 bg-black/40 z-10" /> 
         <video 
           ref={videoRef}
           autoPlay 
@@ -178,7 +177,7 @@ const WelcomeScreen = ({ onFinish }) => {
           style={{ backgroundColor: '#3F3D3B' }}
           className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 rounded-full hover:opacity-90 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600 focus:ring-offset-black shadow-xl"
         >
-          <span>View Menu</span>
+          <span>Order Now</span>
           <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
         </button>
       </div>
@@ -190,12 +189,113 @@ const WelcomeScreen = ({ onFinish }) => {
   );
 };
 
-const MenuItem = ({ item, onAdd, isShopOpen }) => {
-  const isOutOfStock = !item.inStock && item.inStock !== undefined;
-  const disabled = isOutOfStock || !isShopOpen;
+// --- NEW COMPONENT: Order Setup Screen ---
+const OrderSetupView = ({ onConfirm, isShopOpen }) => {
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const availableDates = getAvailableDates();
+  const timeSlots = getTimeSlots();
+
+  const handleStartOrder = () => {
+    if (!selectedDate || !selectedTime) {
+      setErrorMsg("Please select a date and time to continue.");
+      return;
+    }
+    onConfirm(selectedDate, selectedTime);
+  };
+
+  if (!isShopOpen) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center animate-in zoom-in duration-300">
+            <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6 text-red-600">
+                <AlertTriangle size={48} />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Sorry, we are closed.</h1>
+            <p className="text-gray-600 mb-8 max-w-sm">Please check back later during our opening hours.</p>
+             <div className="text-sm text-gray-500 font-medium">{BUSINESS_INFO.hours}</div>
+        </div>
+      )
+  }
 
   return (
-    <div className={`bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col justify-between h-full ${disabled ? 'opacity-60 grayscale' : ''}`}>
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 animate-in slide-in-from-right duration-300">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+        <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Start Your Order</h2>
+            <p className="text-gray-500 text-sm">Select a time slot to see our menu.</p>
+        </div>
+
+        <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Select Date</label>
+              <div className="relative">
+                <select 
+                    value={selectedDate} 
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full p-4 pl-10 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 outline-none appearance-none font-medium text-gray-700"
+                >
+                    <option value="" disabled>Choose a date...</option>
+                    {availableDates.map((date) => (
+                    <option key={date.toISOString()} value={date.toISOString()}>
+                        {date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </option>
+                    ))}
+                </select>
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Select Time</label>
+              <div className="relative">
+                <select 
+                    value={selectedTime} 
+                    onChange={(e) => setSelectedTime(e.target.value)}
+                    disabled={!selectedDate}
+                    className="w-full p-4 pl-10 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 outline-none appearance-none font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <option value="" disabled>Choose a time...</option>
+                    {timeSlots.map((slot) => (
+                    <option key={slot} value={slot}>{slot}</option>
+                    ))}
+                </select>
+                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              </div>
+            </div>
+        </div>
+
+        {errorMsg && (
+            <div className="mt-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center gap-2 animate-pulse">
+                <AlertCircle size={16} />
+                {errorMsg}
+            </div>
+        )}
+
+        <button 
+            onClick={handleStartOrder}
+            style={{ backgroundColor: '#3F3D3B' }}
+            className="w-full mt-8 py-4 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-lg"
+        >
+            <span>Start Ordering</span>
+            <ArrowLeft className="rotate-180" size={20} />
+        </button>
+      </div>
+      
+      <div className="mt-8 text-center">
+         <p className="text-xs text-gray-400 font-medium uppercase tracking-widest">Opening Hours</p>
+         <p className="text-sm text-gray-600 font-medium mt-1">{BUSINESS_INFO.hours}</p>
+      </div>
+    </div>
+  );
+};
+
+const MenuItem = ({ item, onAdd }) => {
+  const isOutOfStock = !item.inStock && item.inStock !== undefined;
+
+  return (
+    <div className={`bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col justify-between h-full ${isOutOfStock ? 'opacity-60 grayscale' : ''}`}>
       <div>
         <div className="flex items-start justify-between mb-2">
           <h3 className="font-bold text-gray-900 text-lg leading-tight">
@@ -211,22 +311,22 @@ const MenuItem = ({ item, onAdd, isShopOpen }) => {
       
       <button 
         onClick={() => onAdd(item)}
-        disabled={disabled}
-        style={!disabled ? { backgroundColor: '#3F3D3B' } : {}}
+        disabled={isOutOfStock}
+        style={!isOutOfStock ? { backgroundColor: '#3F3D3B' } : {}}
         className={`w-full py-2 px-4 rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2 ${
-          disabled
+          isOutOfStock
             ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
             : 'text-white hover:opacity-90 active:scale-95'
         }`}
       >
         <Plus size={16} />
-        {isShopOpen ? "Add to Order" : "Closed"}
+        Add to Order
       </button>
     </div>
   );
 };
 
-const CategorySection = ({ category, onAddToCart, isShopOpen }) => {
+const CategorySection = ({ category, onAddToCart }) => {
   if (!category.items || category.items.length === 0) return null;
 
   return (
@@ -237,7 +337,7 @@ const CategorySection = ({ category, onAddToCart, isShopOpen }) => {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {category.items.map((item, index) => (
-          <MenuItem key={index} item={item} onAdd={onAddToCart} isShopOpen={isShopOpen} />
+          <MenuItem key={index} item={item} onAdd={onAddToCart} />
         ))}
       </div>
     </section>
@@ -246,18 +346,18 @@ const CategorySection = ({ category, onAddToCart, isShopOpen }) => {
 
 // --- Checkout Views (CheckoutView, SuccessView) ---
 
-const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder }) => {
+const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder, initialDate, initialTime }) => {
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phone: '', address: '', city: '', postcode: '',
   });
   const [paymentMethod, setPaymentMethod] = useState('card');
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const availableDates = getAvailableDates();
-  const timeSlots = getTimeSlots();
+  // Date and Time are now passed in as props (already selected)
+  // We format the date for display
+  const dateObj = new Date(initialDate);
+  const displayDate = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
   useEffect(() => {
     if (orderType === 'delivery') setPaymentMethod('card');
@@ -267,18 +367,15 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedDate || !selectedTime) { setErrorMsg("Please select a date and time."); return; }
     setIsProcessing(true); setErrorMsg('');
     
-    const dateObj = new Date(selectedDate);
-    const formattedDate = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
-    
+    // Combine names
     const fullName = `${formData.firstName} ${formData.lastName}`.trim();
     
     const fullOrderData = {
         cart: cart, total: total, orderType: orderType, paymentMethod: paymentMethod, 
         customer: { ...formData, name: fullName },
-        deliverySlot: { date: formattedDate, time: selectedTime, rawDate: selectedDate }
+        deliverySlot: { date: displayDate, time: initialTime, rawDate: initialDate }
     };
 
     try {
@@ -299,9 +396,7 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder }) => {
         if (data.success) onCompleteOrder();
         else throw new Error('Server did not confirm cash order');
       } else {
-        // --- NEW PAYMENT REDIRECT ---
         if (data.paymentId) {
-          // Redirect to the Wix Bridge Page with the Payment ID
           window.location.href = `${BUSINESS_INFO.paymentBridgeUrl}?paymentId=${data.paymentId}`;
         } else {
           throw new Error('No payment ID returned. Wix Payments may not be active.');
@@ -338,25 +433,19 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder }) => {
               <span>Items ({cart.reduce((a,c) => a + c.quantity, 0)})</span>
               <span>{orderType === 'collection' ? 'Collection' : 'Delivery'}</span>
             </div>
-            <div className="flex justify-between font-bold text-lg text-gray-900 pt-2 border-t border-gray-100">
+            
+            {/* Display Selected Slot */}
+            <div className="flex justify-between text-sm text-gray-600 mb-1 bg-gray-50 p-2 rounded-lg mt-2 border border-gray-100">
+              <span className="font-medium flex items-center gap-1"><Clock size={14}/> {initialTime}</span>
+              <span className="font-medium">{displayDate}</span>
+            </div>
+
+            <div className="flex justify-between font-bold text-lg text-gray-900 pt-3 border-t border-gray-100 mt-2">
               <span>Total to Pay</span>
               <span>{formatPrice(total)}</span>
             </div>
           </div>
-          {/* Date & Time */}
-          <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-4">
-            <div className="flex items-center gap-2 text-gray-900 font-bold"><Calendar size={18} /><h3>When?</h3></div>
-            <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} required className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none">
-                <option value="" disabled>Select a Date</option>
-                {availableDates.map((date) => (
-                  <option key={date.toISOString()} value={date.toISOString()}>{date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</option>
-                ))}
-            </select>
-            <select value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)} required disabled={!selectedDate} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none disabled:opacity-50">
-                <option value="" disabled>Select a Time Slot</option>
-                {timeSlots.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
-            </select>
-          </div>
+          
           {/* Contact */}
           <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-4">
             <div className="flex items-center gap-2 text-gray-900 font-bold"><User size={18} /><h3>Details</h3></div>
@@ -508,10 +597,6 @@ const CartView = ({ cart, onBack, onRemove, onUpdateQuantity, onCheckout, isShop
 const Footer = ({ openCart }) => (
   <footer className="bg-gray-900 text-gray-300 py-12 px-4 mt-12">
     <div className="max-w-2xl mx-auto text-center">
-      <div className="mb-12 bg-gray-800 rounded-2xl p-8 border border-gray-700">
-        <h3 className="text-xl text-white font-bold mb-4">Hungry?</h3>
-        <button onClick={openCart} className="inline-flex items-center justify-center gap-2 text-white font-bold py-3 px-8 rounded-full hover:opacity-90 transition-opacity w-full sm:w-auto" style={{ backgroundColor: '#3F3D3B' }}><ShoppingBag size={20} /><span>View Order</span></button>
-      </div>
       <h2 className="text-2xl font-bold text-white mb-6 font-serif">{BUSINESS_INFO.name}</h2>
       <div className="space-y-4 mb-8">
         <div className="flex items-center justify-center gap-2"><MapPin size={18} className="text-red-500" /><span>{BUSINESS_INFO.address}</span></div>
@@ -563,6 +648,9 @@ const Navbar = ({ activeCategory, onNavigate, categories, cartCount, openCart })
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const [orderSetupComplete, setOrderSetupComplete] = useState(false); // Track if date/time is picked
+  const [selectedSlot, setSelectedSlot] = useState({ date: '', time: '' }); // Store the choice
+  
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [activeCategory, setActiveCategory] = useState(DEFAULT_CATEGORIES[0].id);
   const [cart, setCart] = useState([]);
@@ -636,19 +724,73 @@ export default function App() {
     }
   };
 
+  // --- FLOW HANDLERS ---
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+    // Instead of going to 'menu', we stay on 'menu' view logic but show OrderSetupView
+    // The conditional rendering below handles this.
+  };
+
+  const handleOrderSetupConfirm = (date, time) => {
+    setSelectedSlot({ date, time });
+    setOrderSetupComplete(true);
+    // Now the main menu will show
+  };
+
   const handleProceedToCheckout = (total, type) => { setCheckoutTotal(total); setCheckoutOrderType(type); setCurrentView('checkout'); };
   const handleCompleteOrder = () => { setCurrentView('success'); setCart([]); };
   const handleBackHome = () => { setCurrentView('menu'); };
 
-  if (showSplash) return <WelcomeScreen onFinish={() => setShowSplash(false)} />;
+  // --- RENDER LOGIC ---
+  if (showSplash) return <WelcomeScreen onFinish={handleSplashFinish} />;
+
+  // NEW: Show Order Setup if splash is done but date isn't picked yet
+  if (!orderSetupComplete) {
+    return <OrderSetupView onConfirm={handleOrderSetupConfirm} isShopOpen={storeStatus.open} />;
+  }
+
   if (currentView === 'cart') return <CartView cart={cart} onBack={() => setCurrentView('menu')} onUpdateQuantity={updateQuantity} onCheckout={handleProceedToCheckout} isShopOpen={storeStatus.open} />;
-  if (currentView === 'checkout') return <CheckoutView cart={cart} total={checkoutTotal} orderType={checkoutOrderType} onBack={() => setCurrentView('cart')} onCompleteOrder={handleCompleteOrder} />;
+  
+  if (currentView === 'checkout') {
+      return (
+        <CheckoutView 
+            cart={cart} 
+            total={checkoutTotal} 
+            orderType={checkoutOrderType} 
+            onBack={() => setCurrentView('cart')} 
+            onCompleteOrder={handleCompleteOrder}
+            // Pass the pre-selected date/time to the checkout so it can send it to Wix
+            initialDate={selectedSlot.date}
+            initialTime={selectedSlot.time}
+        />
+      );
+  }
+  
   if (currentView === 'success') return <SuccessView onBackHome={handleBackHome} />;
 
+  // Main Menu View
   return (
     <div className="min-h-screen font-sans text-gray-900" style={{ backgroundColor: '#FBF5ED' }}>
       <Navbar activeCategory={activeCategory} onNavigate={scrollToCategory} categories={categories} cartCount={cartCount} openCart={() => setCurrentView('cart')} />
       
+      {/* Show the selected slot in a nice banner at top of menu */}
+      <div className="fixed top-[120px] left-0 right-0 z-30 bg-[#FBF5ED]/95 backdrop-blur px-4 py-2 border-b border-gray-200 text-center">
+          <p className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-1">Ordering For</p>
+          <div className="flex items-center justify-center gap-2 text-sm font-bold text-gray-800">
+              <Calendar size={14} />
+              <span>{new Date(selectedSlot.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+              <span className="text-gray-300">|</span>
+              <Clock size={14} />
+              <span>{selectedSlot.time}</span>
+              <button 
+                onClick={() => setOrderSetupComplete(false)} // Let them change it
+                className="ml-2 p-1 bg-gray-200 rounded-full hover:bg-gray-300 text-gray-600"
+              >
+                  <Edit2 size={12} />
+              </button>
+          </div>
+      </div>
+
       {/* Holiday Mode Banner */}
       {!storeStatus.open && (
           <div className="fixed bottom-0 left-0 right-0 z-50 bg-red-600 text-white p-4 text-center shadow-lg animate-in slide-in-from-bottom">
@@ -660,7 +802,8 @@ export default function App() {
           </div>
       )}
 
-      <main className="pt-36 px-4 max-w-3xl mx-auto min-h-screen pb-12">
+      {/* Added extra padding-top (pt-48) to account for the new "Ordering For" banner */}
+      <main className="pt-48 px-4 max-w-3xl mx-auto min-h-screen pb-12">
         {categories.map((category) => (
           <CategorySection key={category.id} category={category} onAddToCart={addToCart} isShopOpen={storeStatus.open} />
         ))}
