@@ -6,6 +6,7 @@ import { Phone, MapPin, Clock, ShoppingBag, Mail, Facebook, ArrowUp, Plus, Minus
 const BUSINESS_INFO = {
   name: "Flamborough Pizza",
   tagline: "Authentic Sourdough Taste",
+  // API URL for creating checkout sessions
   checkoutUrl: "https://www.flamboroughpizza.co.uk/_functions/checkout",
   menuUrl: "https://www.flamboroughpizza.co.uk/_functions/menu",
   // New Endpoint for checking slots
@@ -17,7 +18,9 @@ const BUSINESS_INFO = {
   address: "Living Sea Centre, South Sea Road, Flamborough YO15 1AE",
   hours: "Thursday - Saturday: 5pm - 9pm",
   logo: "https://static.wixstatic.com/media/6107d8_9990534191124566887d6e0e61aa1ad0~mv2.png",
+  // Correct Wix Video Link
   splashVideo: "https://video.wixstatic.com/video/6107d8_5c4070e48a074075885dc84f2e0611fe/720p/mp4/file.mp4",
+  // Fallback image
   splashPoster: "https://images.pexels.com/photos/5644754/pexels-photo-5644754.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
 };
 
@@ -41,8 +44,20 @@ const DEFAULT_CATEGORIES = [
     name: 'Burgers',
     description: "Juicy, perfectly cooked burgers.",
     items: [
-      { name: "Steak Burger", price: "£5.00", description: "Savour the simple satisfaction of a perfectly cooked steak burger. A timeless favourite." },
-      { name: "Steak Cheese Burger", price: "£5.50", description: "Our classic cheeseburger gets an upgrade with mozzarella cheese melted over a juicy steak burger." }
+      { 
+        name: "Steak Burger", 
+        price: "£5.00", 
+        description: "Savour the simple satisfaction of a perfectly cooked steak burger. A timeless favourite.",
+        // NEW: Added options for burgers
+        customOptions: ["Lettuce", "Tomatoes"]
+      },
+      { 
+        name: "Steak Cheese Burger", 
+        price: "£5.50", 
+        description: "Our classic cheeseburger gets an upgrade with mozzarella cheese melted over a juicy steak burger.",
+        // NEW: Added options for burgers
+        customOptions: ["Lettuce", "Tomatoes"]
+      }
     ]
   },
   {
@@ -67,11 +82,15 @@ const DEFAULT_CATEGORIES = [
   }
 ];
 
+// --- Helper Functions ---
 const parsePrice = (priceStr) => {
   if (typeof priceStr === 'number') return priceStr;
   return parseFloat(priceStr.replace(/[^\d.]/g, '')) || 0;
 };
-const formatPrice = (amount) => `£${amount.toFixed(2)}`;
+
+const formatPrice = (amount) => {
+  return `£${amount.toFixed(2)}`;
+};
 
 const getAvailableDates = () => {
   const dates = [];
@@ -127,6 +146,7 @@ const WelcomeScreen = ({ onFinish }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black text-white flex flex-col items-center justify-center overflow-hidden">
+      {/* Background Video */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-black/40 z-10" />
         <video 
@@ -166,20 +186,17 @@ const OrderSetupView = ({ onConfirm, isShopOpen }) => {
   const availableDates = getAvailableDates();
   const timeSlots = getTimeSlots();
 
-  // --- NEW: Check Slots when Date Changes ---
   useEffect(() => {
     if (!selectedDate) return;
 
     const checkSlots = async () => {
         setIsLoadingSlots(true);
-        setBlockedSlots([]); // Clear previous
+        setBlockedSlots([]); 
         
-        // Convert ISO date to "Friday, 19 December" format matching DB
         const dateObj = new Date(selectedDate);
         const formattedDate = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
         
         try {
-            // Fetch blocked times from backend
             const response = await fetch(`${BUSINESS_INFO.slotsUrl}?date=${encodeURIComponent(formattedDate)}`);
             const data = await response.json();
             if (data.blocked) {
@@ -283,24 +300,90 @@ const OrderSetupView = ({ onConfirm, isShopOpen }) => {
   );
 };
 
-const MenuItem = ({ item, onAdd }) => {
+const MenuItem = ({ item, onAdd, isShopOpen }) => {
   const isOutOfStock = !item.inStock && item.inStock !== undefined;
+  const disabled = isOutOfStock || !isShopOpen;
+
+  // Local state to manage selected custom options
+  const [selectedOptions, setSelectedOptions] = useState([]);
+
+  const toggleOption = (option) => {
+    if (selectedOptions.includes(option)) {
+      setSelectedOptions(selectedOptions.filter(o => o !== option));
+    } else {
+      setSelectedOptions([...selectedOptions, option]);
+    }
+  };
+
+  const handleAdd = () => {
+    let finalItem = { ...item };
+    // If options are selected, append them to the name to differentiate in cart
+    if (selectedOptions.length > 0) {
+      finalItem.name = `${item.name} with ${selectedOptions.join(' & ')}`;
+    }
+    onAdd(finalItem);
+    // Reset selection after adding
+    setSelectedOptions([]);
+  };
+
   return (
-    <div className={`bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col justify-between h-full ${isOutOfStock ? 'opacity-60 grayscale' : ''}`}>
+    <div className={`bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col justify-between h-full ${disabled ? 'opacity-60 grayscale' : ''}`}>
       <div>
         <div className="flex items-start justify-between mb-2">
-          <h3 className="font-bold text-gray-900 text-lg leading-tight">{item.name}{isOutOfStock && <span className="ml-2 text-xs font-bold text-red-500 border border-red-500 px-1 rounded align-middle">SOLD OUT</span>}</h3>
+          <h3 className="font-bold text-gray-900 text-lg leading-tight">
+            {item.name}
+            {isOutOfStock && (
+              <span className="ml-2 text-xs font-bold text-red-500 border border-red-500 px-1 rounded align-middle">SOLD OUT</span>
+            )}
+          </h3>
           <span className="font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg text-sm whitespace-nowrap ml-2">{item.price}</span>
         </div>
         <p className="text-gray-600 text-sm mb-4 leading-relaxed">{item.description}</p>
+        
+        {/* NEW: Custom Options Selector */}
+        {item.customOptions && item.customOptions.length > 0 && !disabled && (
+          <div className="mb-4">
+            <p className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wide">Add Extras (Free):</p>
+            <div className="flex flex-wrap gap-2">
+              {item.customOptions.map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => toggleOption(opt)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
+                    selectedOptions.includes(opt)
+                      ? 'bg-gray-800 text-white border-gray-800 font-bold shadow-sm'
+                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-400'
+                  }`}
+                >
+                  {selectedOptions.includes(opt) ? '✓ ' : '+ '}{opt}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
-      <button onClick={() => onAdd(item)} disabled={isOutOfStock} style={!isOutOfStock ? { backgroundColor: '#3F3D3B' } : {}} className={`w-full py-2 px-4 rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2 ${isOutOfStock ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'text-white hover:opacity-90 active:scale-95'}`}><Plus size={16} /> Add to Order</button>
+      
+      <button 
+        onClick={handleAdd}
+        disabled={disabled}
+        style={!disabled ? { backgroundColor: '#3F3D3B' } : {}}
+        className={`w-full py-2 px-4 rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2 ${
+          disabled
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+            : 'text-white hover:opacity-90 active:scale-95'
+        }`}
+      >
+        <Plus size={16} />
+        {isShopOpen ? "Add to Order" : "Closed"}
+      </button>
     </div>
   );
 };
 
-const CategorySection = ({ category, onAddToCart }) => {
+const CategorySection = ({ category, onAddToCart, isShopOpen }) => {
   if (!category.items || category.items.length === 0) return null;
+
   return (
     <section id={category.id} className="py-8 scroll-mt-36">
       <div className="mb-6 px-2">
@@ -308,16 +391,20 @@ const CategorySection = ({ category, onAddToCart }) => {
         <p className="text-gray-500 text-sm">{category.description}</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {category.items.map((item, index) => <MenuItem key={index} item={item} onAdd={onAddToCart} />)}
+        {category.items.map((item, index) => (
+          <MenuItem key={index} item={item} onAdd={onAddToCart} isShopOpen={isShopOpen} />
+        ))}
       </div>
     </section>
   );
 };
 
-// --- Checkout Views ---
+// --- Checkout Views (CheckoutView, SuccessView) ---
 
 const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder, initialDate, initialTime }) => {
-  const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', city: '', postcode: '' });
+  const [formData, setFormData] = useState({
+    firstName: '', lastName: '', email: '', phone: '', address: '', city: '', postcode: '',
+  });
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -325,35 +412,57 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder, initial
   const dateObj = new Date(initialDate);
   const displayDate = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
-  useEffect(() => { if (orderType === 'delivery') setPaymentMethod('card'); }, [orderType]);
+  useEffect(() => {
+    if (orderType === 'delivery') setPaymentMethod('card');
+  }, [orderType]);
+
   const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsProcessing(true); setErrorMsg('');
+    
     const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+    
     const fullOrderData = {
         cart: cart, total: total, orderType: orderType, paymentMethod: paymentMethod, 
         customer: { ...formData, name: fullName },
         deliverySlot: { date: displayDate, time: initialTime, rawDate: initialDate }
     };
+
     try {
       const response = await fetch(BUSINESS_INFO.checkoutUrl, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, mode: 'cors', body: JSON.stringify(fullOrderData)
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        mode: 'cors',
+        body: JSON.stringify(fullOrderData)
       });
+      
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || data.details || `Server Error ${response.status}`);
+
+      if (!response.ok) {
+          throw new Error(data.error || data.details || `Server Error ${response.status}`);
+      }
+
       if (paymentMethod === 'cash') {
-        if (data.success) onCompleteOrder(); else throw new Error('Server did not confirm cash order');
+        if (data.success) onCompleteOrder();
+        else throw new Error('Server did not confirm cash order');
       } else {
-        if (data.paymentId) window.location.href = `${BUSINESS_INFO.paymentBridgeUrl}?paymentId=${data.paymentId}`;
-        else throw new Error('No payment ID returned. Wix Payments may not be active.');
+        if (data.paymentId) {
+          window.location.href = `${BUSINESS_INFO.paymentBridgeUrl}?paymentId=${data.paymentId}`;
+        } else {
+          throw new Error('No payment ID returned. Wix Payments may not be active.');
+        }
       }
     } catch (err) {
       console.error("Order Error:", err);
-      if (err.message.includes('500')) setErrorMsg("Server Error (500): Check if Wix Payments is connected and 'AppOrders' collection exists.");
-      else if (err.message.includes('Failed to fetch')) setErrorMsg("Connection Error: Backend code may not be published or CORS is blocking.");
-      else setErrorMsg(`Order Failed: ${err.message}`);
+      if (err.message.includes('500')) {
+          setErrorMsg("Server Error (500): Check if Wix Payments is connected and 'AppOrders' collection exists.");
+      } else if (err.message.includes('Failed to fetch')) {
+          setErrorMsg("Connection Error: Backend code may not be published or CORS is blocking.");
+      } else {
+          setErrorMsg(`Order Failed: ${err.message}`);
+      }
       setIsProcessing(false);
     }
   };
@@ -361,38 +470,70 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder, initial
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col animate-in slide-in-from-right duration-300">
       <div className="bg-white sticky top-0 z-50 shadow-sm border-b border-gray-100">
-        <div className="px-4 py-4 flex items-center justify-between"><button onClick={onBack} className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full"><ArrowLeft size={24} /></button><h1 className="text-lg font-bold">Checkout</h1><div className="w-8" /></div>
+        <div className="px-4 py-4 flex items-center justify-between">
+          <button onClick={onBack} className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full"><ArrowLeft size={24} /></button>
+          <h1 className="text-lg font-bold">Checkout</h1>
+          <div className="w-8" />
+        </div>
       </div>
       <div className="flex-1 p-4 overflow-y-auto">
         <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto">
+          {/* Summary */}
           <div className="bg-white p-4 rounded-xl border border-gray-200">
             <h3 className="font-bold text-gray-900 mb-2">Order Summary</h3>
-            <div className="flex justify-between text-sm text-gray-600 mb-1"><span>Items ({cart.reduce((a,c) => a + c.quantity, 0)})</span><span>{orderType === 'collection' ? 'Collection' : 'Delivery'}</span></div>
-            <div className="flex justify-between text-sm text-gray-600 mb-1 bg-gray-50 p-2 rounded-lg mt-2 border border-gray-100"><span className="font-medium flex items-center gap-1"><Clock size={14}/> {initialTime}</span><span className="font-medium">{displayDate}</span></div>
-            <div className="flex justify-between font-bold text-lg text-gray-900 pt-3 border-t border-gray-100 mt-2"><span>Total to Pay</span><span>{formatPrice(total)}</span></div>
+            <div className="flex justify-between text-sm text-gray-600 mb-1">
+              <span>Items ({cart.reduce((a,c) => a + c.quantity, 0)})</span>
+              <span>{orderType === 'collection' ? 'Collection' : 'Delivery'}</span>
+            </div>
+            
+            <div className="flex justify-between text-sm text-gray-600 mb-1 bg-gray-50 p-2 rounded-lg mt-2 border border-gray-100">
+              <span className="font-medium flex items-center gap-1"><Clock size={14}/> {initialTime}</span>
+              <span className="font-medium">{displayDate}</span>
+            </div>
+
+            <div className="flex justify-between font-bold text-lg text-gray-900 pt-3 border-t border-gray-100 mt-2">
+              <span>Total to Pay</span>
+              <span>{formatPrice(total)}</span>
+            </div>
           </div>
+          
+          {/* Contact */}
           <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-4">
             <div className="flex items-center gap-2 text-gray-900 font-bold"><User size={18} /><h3>Details</h3></div>
-            <div className="flex gap-4"><input required name="firstName" placeholder="First Name" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" onChange={handleInputChange} /><input required name="lastName" placeholder="Last Name" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" onChange={handleInputChange} /></div>
+            <div className="flex gap-4">
+                <input required name="firstName" placeholder="First Name" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" onChange={handleInputChange} />
+                <input required name="lastName" placeholder="Last Name" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" onChange={handleInputChange} />
+            </div>
             <input required name="email" type="email" placeholder="Email" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" onChange={handleInputChange} />
             <input required name="phone" type="tel" placeholder="Phone" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" onChange={handleInputChange} />
           </div>
+          {/* Address */}
           {orderType === 'delivery' && (
             <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-4">
                <div className="flex items-center gap-2 text-gray-900 font-bold"><Home size={18} /><h3>Address</h3></div>
               <input required name="address" placeholder="Street Address" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" onChange={handleInputChange} />
-              <div className="flex gap-4"><input required name="city" placeholder="City/Town" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" onChange={handleInputChange} /><input required name="postcode" placeholder="Postcode" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" onChange={handleInputChange} /></div>
+              <div className="flex gap-4">
+                <input required name="city" placeholder="City/Town" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" onChange={handleInputChange} />
+                <input required name="postcode" placeholder="Postcode" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" onChange={handleInputChange} />
+              </div>
             </div>
           )}
+          {/* Payment Method */}
           {orderType === 'collection' && (
             <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-3">
               <h3 className="font-bold text-gray-900">Payment</h3>
-              <button type="button" onClick={() => setPaymentMethod('card')} className={`flex items-center gap-3 p-3 rounded-lg border w-full ${paymentMethod === 'card' ? 'border-gray-500 bg-gray-50 text-gray-900' : 'border-gray-200'}`}><CreditCard size={20} /><div className="text-left flex-1"><p className="font-bold text-sm">Online Card</p></div>{paymentMethod === 'card' && <CheckCircle size={18} />}</button>
-              <button type="button" onClick={() => setPaymentMethod('cash')} className={`flex items-center gap-3 p-3 rounded-lg border w-full ${paymentMethod === 'cash' ? 'border-gray-500 bg-gray-50 text-gray-900' : 'border-gray-200'}`}><Banknote size={20} /><div className="text-left flex-1"><p className="font-bold text-sm">Pay Cash or Card at Shop</p></div>{paymentMethod === 'cash' && <CheckCircle size={18} />}</button>
+              <button type="button" onClick={() => setPaymentMethod('card')} className={`flex items-center gap-3 p-3 rounded-lg border w-full ${paymentMethod === 'card' ? 'border-gray-500 bg-gray-50 text-gray-900' : 'border-gray-200'}`}>
+                  <CreditCard size={20} /><div className="text-left flex-1"><p className="font-bold text-sm">Online Card</p></div>{paymentMethod === 'card' && <CheckCircle size={18} />}
+              </button>
+              <button type="button" onClick={() => setPaymentMethod('cash')} className={`flex items-center gap-3 p-3 rounded-lg border w-full ${paymentMethod === 'cash' ? 'border-gray-500 bg-gray-50 text-gray-900' : 'border-gray-200'}`}>
+                  <Banknote size={20} /><div className="text-left flex-1"><p className="font-bold text-sm">Pay Cash or Card at Shop</p></div>{paymentMethod === 'cash' && <CheckCircle size={18} />}
+              </button>
             </div>
           )}
           {errorMsg && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex gap-2"><AlertCircle size={16} className="shrink-0 mt-0.5" />{errorMsg}</div>}
-          <button type="submit" disabled={isProcessing} style={{ backgroundColor: '#3F3D3B' }} className={`w-full py-4 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-lg disabled:opacity-70`}>{isProcessing ? <span>Processing...</span> : <><ShoppingBag size={20} /><span>{paymentMethod === 'cash' ? 'Place Order' : `Pay ${formatPrice(total)}`}</span></>}</button>
+          <button type="submit" disabled={isProcessing} style={{ backgroundColor: '#3F3D3B' }} className={`w-full py-4 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-lg disabled:opacity-70`}>
+            {isProcessing ? <span>Processing...</span> : <><ShoppingBag size={20} /><span>{paymentMethod === 'cash' ? 'Place Order' : `Pay ${formatPrice(total)}`}</span></>}
+          </button>
         </form>
         <div className="h-12" />
       </div>
@@ -400,15 +541,17 @@ const CheckoutView = ({ cart, total, orderType, onBack, onCompleteOrder, initial
   );
 };
 
+// --- Success View ---
 const SuccessView = ({ onBackHome }) => (
   <div className="min-h-screen bg-green-50 flex flex-col items-center justify-center p-6 text-center animate-in zoom-in duration-300">
     <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-600"><CheckCircle size={48} /></div>
     <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
-    <p className="text-gray-600 mb-8 max-w-sm">Thank you for your order. We are firing up the oven!</p>
-    <button onClick={onBackHome} style={{ backgroundColor: '#3F3D3B' }} className="px-8 py-3 text-white font-bold rounded-full hover:opacity-90 transition-opacity">Back to Menu</button>
+    <p className="text-gray-600 mb-8 max-w-sm">Thank you for your order, your confirmation has been emailed to you.</p>
+    <button onClick={onBackHome} style={{ backgroundColor: '#3F3D3B' }} className="px-8 py-3 text-white font-bold rounded-full hover:opacity-90 transition-opacity">Start New Order</button>
   </div>
 );
 
+// --- Cart View ---
 const CartView = ({ cart, onBack, onRemove, onUpdateQuantity, onCheckout, isShopOpen }) => {
   const [orderType, setOrderType] = useState('collection');
   const [postcode, setPostcode] = useState('');
@@ -421,7 +564,9 @@ const CartView = ({ cart, onBack, onRemove, onUpdateQuantity, onCheckout, isShop
 
   const subtotal = cart.reduce((sum, item) => sum + (parsePrice(item.price) * item.quantity), 0);
   let deliveryCost = 0;
-  if (orderType === 'delivery') deliveryCost = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
+  if (orderType === 'delivery') {
+    deliveryCost = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
+  }
   const total = subtotal + deliveryCost;
 
   const checkDelivery = () => {
@@ -436,17 +581,28 @@ const CartView = ({ cart, onBack, onRemove, onUpdateQuantity, onCheckout, isShop
 
   let validationMessage = null;
   let isCheckoutDisabled = false;
-  if (subtotal < MIN_ORDER_VALUE) { isCheckoutDisabled = true; validationMessage = `Minimum order value is ${formatPrice(MIN_ORDER_VALUE)}`; }
-  else if (orderType === 'delivery') {
-    if (subtotal < MIN_DELIVERY_ORDER) { isCheckoutDisabled = true; validationMessage = `Minimum order for delivery is ${formatPrice(MIN_DELIVERY_ORDER)}`; }
-    else if (deliveryStatus !== 'success') { isCheckoutDisabled = true; validationMessage = "Please check a valid delivery postcode first."; }
+
+  if (subtotal < MIN_ORDER_VALUE) {
+    isCheckoutDisabled = true; validationMessage = `Minimum order value is ${formatPrice(MIN_ORDER_VALUE)}`;
+  } else if (orderType === 'delivery') {
+    if (subtotal < MIN_DELIVERY_ORDER) {
+      isCheckoutDisabled = true; validationMessage = `Minimum order for delivery is ${formatPrice(MIN_DELIVERY_ORDER)}`;
+    } else if (deliveryStatus !== 'success') {
+      isCheckoutDisabled = true; validationMessage = "Please check a valid delivery postcode first.";
+    }
   }
-  if (!isShopOpen) { isCheckoutDisabled = true; validationMessage = "Sorry, the shop is currently closed."; }
+  if (!isShopOpen) {
+      isCheckoutDisabled = true; validationMessage = "Sorry, the shop is currently closed.";
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col animate-in slide-in-from-right duration-300">
       <div className="bg-white sticky top-0 z-50 shadow-sm border-b border-gray-100">
-        <div className="px-4 py-4 flex items-center justify-between"><button onClick={onBack} className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full"><ArrowLeft size={24} /></button><h1 className="text-lg font-bold">Your Order</h1><div className="w-8" /></div>
+        <div className="px-4 py-4 flex items-center justify-between">
+          <button onClick={onBack} className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full"><ArrowLeft size={24} /></button>
+          <h1 className="text-lg font-bold">Your Order</h1>
+          <div className="w-8" /> 
+        </div>
         <div className="px-4 pb-4">
           <div className="flex p-1 bg-gray-100 rounded-lg mb-4">
             <button onClick={() => { setOrderType('collection'); setDeliveryStatus('idle'); }} className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-md transition-all ${orderType === 'collection' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}><Store size={16} /> Collection</button>
@@ -455,7 +611,10 @@ const CartView = ({ cart, onBack, onRemove, onUpdateQuantity, onCheckout, isShop
           {orderType === 'delivery' && (
             <div className="bg-white border border-gray-200 rounded-lg p-4 animate-in fade-in slide-in-from-top-2">
               <h3 className="text-sm font-bold text-gray-900 mb-2">Check Delivery</h3>
-              <div className="flex gap-2"><input type="text" placeholder="Postcode (e.g. YO15)" value={postcode} onChange={(e) => { setPostcode(e.target.value); setDeliveryStatus('idle'); }} className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm uppercase" /><button onClick={checkDelivery} disabled={!postcode} style={{ backgroundColor: '#3F3D3B' }} className="text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90">Check</button></div>
+              <div className="flex gap-2">
+                <input type="text" placeholder="Postcode (e.g. YO15)" value={postcode} onChange={(e) => { setPostcode(e.target.value); setDeliveryStatus('idle'); }} className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm uppercase" />
+                <button onClick={checkDelivery} disabled={!postcode} style={{ backgroundColor: '#3F3D3B' }} className="text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90">Check</button>
+              </div>
               {deliveryStatus === 'success' && <div className="mt-2 text-sm text-green-700">✅ We deliver to your area.</div>}
               {deliveryStatus === 'error' && <div className="mt-2 text-sm text-red-700">❌ Sorry, we don't deliver here.</div>}
             </div>
@@ -488,19 +647,18 @@ const CartView = ({ cart, onBack, onRemove, onUpdateQuantity, onCheckout, isShop
 const Footer = ({ openCart }) => (
   <footer className="bg-gray-900 text-gray-300 py-12 px-4 mt-12">
     <div className="max-w-2xl mx-auto text-center">
-      <div className="mb-12 bg-gray-800 rounded-2xl p-8 border border-gray-700">
-        <h3 className="text-xl text-white font-bold mb-4">Hungry?</h3>
-        <button onClick={openCart} className="inline-flex items-center justify-center gap-2 text-white font-bold py-3 px-8 rounded-full hover:opacity-90 transition-opacity w-full sm:w-auto" style={{ backgroundColor: '#3F3D3B' }}><ShoppingBag size={20} /><span>View Order</span></button>
-      </div>
       <h2 className="text-2xl font-bold text-white mb-6 font-serif">{BUSINESS_INFO.name}</h2>
       <div className="space-y-4 mb-8">
         <div className="flex items-center justify-center gap-2"><MapPin size={18} className="text-red-500" /><span>{BUSINESS_INFO.address}</span></div>
         <div className="flex items-center justify-center gap-2"><Phone size={18} className="text-red-500" /><span>{BUSINESS_INFO.phone}</span></div>
         <div className="flex items-center justify-center gap-2"><Mail size={18} className="text-red-500" /><span>{BUSINESS_INFO.email}</span></div>
         <div className="flex items-center justify-center gap-2"><Clock size={18} className="text-red-500" /><span>{BUSINESS_INFO.hours}</span></div>
+        
         {BUSINESS_INFO.facebook && (
           <div className="flex items-center justify-center gap-2 pt-4">
-            <a href={BUSINESS_INFO.facebook} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full transition-colors text-sm font-medium"><Facebook size={18} /><span>Follow us on Facebook</span></a>
+            <a href={BUSINESS_INFO.facebook} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full transition-colors text-sm font-medium">
+              <Facebook size={18} /><span>Follow us on Facebook</span>
+            </a>
           </div>
         )}
       </div>
@@ -525,6 +683,7 @@ const Navbar = ({ activeCategory, onNavigate, categories, cartCount, openCart })
             <img src={BUSINESS_INFO.logo} alt={BUSINESS_INFO.name} className="w-12 h-12 rounded-full object-cover shadow-sm" onError={(e) => {e.target.style.display = 'none'}} />
             <h1 className="font-serif font-bold text-3xl text-gray-900 leading-tight py-1">{BUSINESS_INFO.name}</h1>
           </div>
+          
           <div className="flex items-center gap-2 mt-12">
             <button onClick={openCart} className="relative flex items-center gap-2 text-white text-sm font-bold px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity shadow-sm" style={{ backgroundColor: '#3F3D3B' }}><span>Order</span><ShoppingBag size={16} />{cartCount > 0 && <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">{cartCount}</span>}</button>
           </div>
@@ -607,7 +766,14 @@ export default function App() {
 
   const handleProceedToCheckout = (total, type) => { setCheckoutTotal(total); setCheckoutOrderType(type); setCurrentView('checkout'); };
   const handleCompleteOrder = () => { setCurrentView('success'); setCart([]); };
-  const handleBackHome = () => { setCurrentView('menu'); };
+  
+  const handleBackHome = () => { 
+    setOrderSetupComplete(false); 
+    setSelectedSlot({ date: '', time: '' });
+    setCurrentView('menu');
+    setShowSplash(true); 
+  };
+  
   const handleSplashFinish = () => { setShowSplash(false); };
   const handleOrderSetupConfirm = (date, time) => { setSelectedSlot({ date, time }); setOrderSetupComplete(true); };
 
